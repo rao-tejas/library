@@ -1,7 +1,6 @@
 package com.nitte.library.ServicesImpl;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.nitte.library.Dto.StudentDTO;
-import com.nitte.library.Entity.Book;
 import com.nitte.library.Entity.Student;
 import com.nitte.library.Repository.StudentRepository;
 import com.nitte.library.Services.StudentService;
