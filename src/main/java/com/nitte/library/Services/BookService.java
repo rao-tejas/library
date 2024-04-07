@@ -10,5 +10,7 @@ public interface BookService {
 
     ResponseEntity<?> saveBook(BookDTO StudentDto);
 
+    BookDTO getBookDetails(Long bookId);
+
     
 }

@@ -8,6 +8,6 @@ public interface BorrowBookService {
 
     ResponseEntity<?> borrowBook(BorrowedBookDTO StudentDto);
 
-
+    public ResponseEntity<?> getBorrowedBooksByEmail(String email);
     
 }
