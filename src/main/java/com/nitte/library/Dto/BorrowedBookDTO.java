@@ -15,6 +15,7 @@ public class BorrowedBookDTO {
     private LocalDateTime issuedDate;
     private LocalDateTime returnDate;
     private double penalty;
+    private Character activeFlag;
     private BookDTO book; 
 
 }

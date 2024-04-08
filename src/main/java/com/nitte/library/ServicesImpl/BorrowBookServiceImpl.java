@@ -33,59 +33,59 @@ public class BorrowBookServiceImpl implements BorrowBookService {
     private StudentRepository studentRepository;
 
     @Autowired
-    BookService bookService; 
+    BookService bookService;
 
     @Override
     public ResponseEntity<?> borrowBook(BorrowedBookDTO borrowedBookDTO) {
         try {
-            // Check if the book with the given ID exists
+            // Check if the book exists
             Optional<Book> optionalBook = bookRepository.findById(borrowedBookDTO.getBookId());
-            System.out.println(optionalBook);
             if (optionalBook.isPresent()) {
-                // Check if the email exists in the student repository
-                Optional<Student> optionalStudent = Optional
-                        .ofNullable(studentRepository.findByEmail(borrowedBookDTO.getEmail()));
-                if (optionalStudent.isPresent()) {
-                    Book book = optionalBook.get();
-                    int count = book.getCount();
-                    if (count > 0) {
-                        // Reduce the count of the book by 1
-                        book.setCount(count - 1);
-                        bookRepository.save(book);
-
-                        // Convert BorrowedBookDTO to BorrowedBook entity
-                        BorrowedBook borrowedBook = new BorrowedBook();
-                        borrowedBook.setEmail(borrowedBookDTO.getEmail());
-                        borrowedBook.setBookId(borrowedBookDTO.getBookId());
-
-                        LocalDateTime issuedDateTime = LocalDateTime.now();
-                        borrowedBook.setIssuedDate(issuedDateTime);
-
-                        // Set return date after 30 days from issued date
-                        LocalDateTime returnDateTime = issuedDateTime.plusDays(30);
-                        borrowedBook.setReturnDate(returnDateTime);
-
-                        // Save the BorrowedBook entity
-                        borrowedBookRepository.save(borrowedBook);
-
-                        // Return success response
-                        return ResponseEntity.ok().body("{\"status\": \"success\"}");
-                    } else {
-                        // Book is out of stock
+                Book book = optionalBook.get();
+                int count = book.getCount();
+                if (count > 0) {
+                    // Check if the email exists in the student entity
+                    Student student = studentRepository.findByEmail(borrowedBookDTO.getEmail());
+                    if (student == null) {
                         return ResponseEntity.badRequest()
-                                .body("{\"status\": \"failed\", \"message\": \"Book is out of stock.\"}");
+                                .body("{\"status\": \"failed\", \"message\": \"Student with provided email not found.\"}");
                     }
+
+                    // Check if the book is already borrowed by the student with an active flag 'B'
+                    List<BorrowedBook> existingBorrowedBook = borrowedBookRepository
+                            .findByEmailAndBookIdAndActiveFlag(borrowedBookDTO.getEmail(),
+                                    borrowedBookDTO.getBookId(), 'B');
+                    if (!existingBorrowedBook.isEmpty()) {
+                        return ResponseEntity.ok()
+                                .body("{\"status\": \"failed\", \"message\": \"You already have this book.\"}");
+                    }
+
+                    // Proceed with borrowing the book
+                    book.setCount(count - 1);
+                    bookRepository.save(book);
+
+                    BorrowedBook borrowedBook = new BorrowedBook();
+                    borrowedBook.setEmail(borrowedBookDTO.getEmail());
+                    borrowedBook.setBookId(borrowedBookDTO.getBookId());
+                    borrowedBook.setActiveFlag('B');
+
+                    LocalDateTime issuedDateTime = LocalDateTime.now();
+                    borrowedBook.setIssuedDate(issuedDateTime);
+
+                    LocalDateTime returnDateTime = issuedDateTime.plusDays(30);
+                    borrowedBook.setReturnDate(returnDateTime);
+
+                    borrowedBookRepository.save(borrowedBook);
+
+                    return ResponseEntity.ok().body("{\"status\": \"success\"}");
                 } else {
-                    // Email not found in the student repository
-                    return ResponseEntity.badRequest()
-                            .body("{\"status\": \"failed\", \"message\": \"Email not found.\"}");
+                    return ResponseEntity.ok()
+                            .body("{\"status\": \"failed\", \"message\": \"Book is out of stock.\"}");
                 }
             } else {
-                // Book with the given ID not found
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            // Handle any exceptions
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("{\"status\": \"failed\", \"message\": \"An error occurred while borrowing the book.\"}");
         }
@@ -93,28 +93,50 @@ public class BorrowBookServiceImpl implements BorrowBookService {
 
     @Override
     public ResponseEntity<?> getBorrowedBooksByEmail(String email) {
-        List<BorrowedBook> borrowedBooks = borrowedBookRepository.findByEmail(email);
+        List<BorrowedBook> borrowedBooks = borrowedBookRepository.findByEmailAndActiveFlag(email);
 
         List<BorrowedBookDTO> borrowedBookDTOs = borrowedBooks.stream()
-            .map(borrowedBook -> {
-                BorrowedBookDTO borrowedBookDTO = new BorrowedBookDTO();
-                borrowedBookDTO.setId(borrowedBook.getId());
-                borrowedBookDTO.setEmail(borrowedBook.getEmail());
-                borrowedBookDTO.setBookId(borrowedBook.getBookId());
-                borrowedBookDTO.setIssuedDate(borrowedBook.getIssuedDate());
-                borrowedBookDTO.setReturnDate(borrowedBook.getReturnDate());
-                borrowedBookDTO.setPenalty(borrowedBook.getPenalty());
-                
-                // Fetch book details
-                BookDTO bookDTO = bookService.getBookDetails(borrowedBook.getBookId()); // Assuming BookDTO is used for book details
-                borrowedBookDTO.setBook(bookDTO);
-                
-                return borrowedBookDTO;
-            })
-            .collect(Collectors.toList());
+                .map(borrowedBook -> {
+                    BorrowedBookDTO borrowedBookDTO = new BorrowedBookDTO();
+                    borrowedBookDTO.setId(borrowedBook.getId());
+                    borrowedBookDTO.setEmail(borrowedBook.getEmail());
+                    borrowedBookDTO.setBookId(borrowedBook.getBookId());
+                    borrowedBookDTO.setIssuedDate(borrowedBook.getIssuedDate());
+                    borrowedBookDTO.setReturnDate(borrowedBook.getReturnDate());
+                    borrowedBookDTO.setPenalty(borrowedBook.getPenalty());
+                    borrowedBookDTO.setActiveFlag(borrowedBook.getActiveFlag());
+
+
+                    BookDTO bookDTO = bookService.getBookDetails(borrowedBook.getBookId());
+                    borrowedBookDTO.setBook(bookDTO);
+
+                    return borrowedBookDTO;
+                })
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(borrowedBookDTOs);
     }
+
+    @Override
+    public ResponseEntity<?> returnBook(BorrowedBookDTO bookDTO) {
+        if (bookDTO.getEmail() == null || bookDTO.getBookId() == null) {
+            return ResponseEntity.ok()
+                    .body("{\"status\": \"failed\", \"message\": \"Email or bookId not provided.\"}");
+        }
+
+        List<BorrowedBook> borrowedBooks = borrowedBookRepository.findByEmailAndBookIdAndActiveFlag(bookDTO.getEmail(),
+                bookDTO.getBookId(), 'B');
+
+        if (!borrowedBooks.isEmpty()) {
+            BorrowedBook borrowedBook = borrowedBooks.get(0);
+            borrowedBook.setActiveFlag('R');
+            borrowedBookRepository.save(borrowedBook);
+
+            return ResponseEntity.ok("{\"status\": \"success\", \"message\": \"Book returned successfully.\"}");
+        } else {
+            return ResponseEntity.ok()
+                    .body("{\"status\": \"failed\", \"message\": \"No borrowed book found for the given email and bookId.\"}");
+        }
+    }
+
 }
-
-

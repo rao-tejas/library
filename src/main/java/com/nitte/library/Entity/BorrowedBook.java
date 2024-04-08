@@ -17,5 +17,6 @@ public class BorrowedBook {
     private Long bookId;
     private LocalDateTime issuedDate;
     private LocalDateTime returnDate;
+    private Character activeFlag;
     private double penalty;
 }

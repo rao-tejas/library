@@ -26,9 +26,16 @@ public class BorrowedBookController {
         return borrowBookService.borrowBook(book);
     }
 
+    @PostMapping("/return")
+    public ResponseEntity<?> returnBook(@RequestBody BorrowedBookDTO book) {
+        return borrowBookService.returnBook(book);
+    }
+
     @GetMapping("/borrowedByEmailAddress")
     public ResponseEntity<?> getBorrowedBooksByEmail(@RequestParam String email) {
         return borrowBookService.getBorrowedBooksByEmail(email);
     }
+
+
    
 }

@@ -12,6 +12,8 @@ import com.nitte.library.Entity.Student;
 import com.nitte.library.Repository.StudentRepository;
 import com.nitte.library.Services.StudentService;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class StudentServiceImpl implements StudentService {
     @Autowired
@@ -20,7 +22,7 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public ResponseEntity<?> saveStudent(StudentDTO StudentDto) {
         boolean emailExist = StudentRepo.existsByEmail(StudentDto.getEmail());
-        System.out.println("service"+StudentDto.getName());
+        System.out.println("service" + StudentDto.getName());
         if (!emailExist) {
             Student Student = new Student();
             Student.setName(StudentDto.getName());
@@ -29,7 +31,7 @@ public class StudentServiceImpl implements StudentService {
             Student.setPhoneNumber(StudentDto.getPhoneNumber());
             Student.setBranch(StudentDto.getBranch());
             Student.setSection(StudentDto.getSection());
-            Student resStudent=StudentRepo.save(Student);
+            Student resStudent = StudentRepo.save(Student);
 
             return new ResponseEntity<>(resStudent, HttpStatus.CREATED);
         } else {
@@ -41,37 +43,40 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public ResponseEntity<?> getALLStudent() {
-       List<Student> StudentList=StudentRepo.findAll();
-       if(StudentList!=null){
-        return  new ResponseEntity<>(StudentList, HttpStatus.OK);
-       }
-    return new ResponseEntity<>("Student List is empty", HttpStatus.CONFLICT);
-    }
-
-	@Override
-public ResponseEntity<String> loginStudent(String email, String password) {
-    List<Student> students = StudentRepo.findByEmailAndPassword(email, password);
-
-    if (!students.isEmpty()) {
-        return new ResponseEntity<>("Login successful", HttpStatus.OK);
-    } else {
-        return new ResponseEntity<>("Login failed", HttpStatus.CONFLICT);
-    }
-}
-@Override
-public ResponseEntity<?> getStudentByEmail(String email) {
-    try {
-        Student student = StudentRepo.findByEmail(email);
-        if (student != null) {
-            return new ResponseEntity<>(student, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>("Student not found for email: " + email, HttpStatus.NOT_FOUND);
+        List<Student> StudentList = StudentRepo.findAll();
+        if (StudentList != null) {
+            return new ResponseEntity<>(StudentList, HttpStatus.OK);
         }
-    } catch (Exception e) {
-        return new ResponseEntity<>("An error occurred while fetching student details", HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>("Student List is empty", HttpStatus.CONFLICT);
     }
-}
+
+    @Override
+    public ResponseEntity<String> loginStudent(String email, String password) {
+        List<Student> students = StudentRepo.findByEmailAndPassword(email, password);
+
+        if (!students.isEmpty()) {
+            return new ResponseEntity<>("Login successful", HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Login failed", HttpStatus.CONFLICT);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> getStudentByEmail(String email) {
+        try {
+            Student student = StudentRepo.findByEmail(email);
+            if (student != null) {
+                return new ResponseEntity<>(student, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("Student not found for email: " + email, HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>("An error occurred while fetching student details",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+   
+
 
 }
-
-
