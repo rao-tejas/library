@@ -17,5 +17,7 @@ public class Student {
     private String phoneNumber;
     private String branch;
     private String section;
+    private String profilePicturePath;
+
       
 }
