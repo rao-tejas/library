@@ -7,4 +7,6 @@ import com.nitte.library.Entity.Book;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book,Long>{
+   
 }
+

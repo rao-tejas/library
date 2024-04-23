@@ -16,5 +16,4 @@ public interface StudentService {
     
     ResponseEntity<?> getStudentByEmail(String email);
 
-
 }

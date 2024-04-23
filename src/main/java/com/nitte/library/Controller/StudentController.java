@@ -10,9 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.nitte.library.Dto.StudentDTO;
 import com.nitte.library.Services.StudentService;
@@ -32,6 +30,7 @@ public class StudentController {
 
 	@GetMapping("/getByEmail/{email}")
 	public ResponseEntity<?> getStudentByEmail(@PathVariable String email) {
+
 		return StudentService.getStudentByEmail(email);
 	}
 
@@ -42,7 +41,6 @@ public class StudentController {
 
 	@PostMapping("/login")
 	public ResponseEntity<?> loginStudent(@RequestBody StudentDTO StudentDto) {
-		System.out.println("Login Student");
 		return StudentService.loginStudent(StudentDto.getEmail(), StudentDto.getPassword());
 
 	}
